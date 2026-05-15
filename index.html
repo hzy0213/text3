@@ -69,7 +69,6 @@
             font-weight: bold;
         }
 
-        /* 案件卡片風格 */
         .case-card {
             background: var(--white);
             color: #333;
@@ -77,25 +76,24 @@
             border-radius: 8px;
             margin-bottom: 20px;
             border-left: 10px solid var(--red);
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
         }
 
         .meme-img-container {
             width: 100%;
             margin-bottom: 15px;
             text-align: center;
-            background: #eee;
+            background: #333;
             border-radius: 5px;
             overflow: hidden;
+            min-height: 250px;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 200px;
         }
 
         .meme-img {
             max-width: 100%;
-            max-height: 300px;
+            max-height: 350px;
             object-fit: contain;
             display: block;
         }
@@ -133,8 +131,8 @@
 
         .btn:disabled { cursor: not-allowed; }
 
-        .correct { background-color: #2a9d8f !important; border-color: #fff !important; color: white; }
-        .wrong { background-color: var(--red) !important; border-color: #fff !important; color: white; }
+        .correct { background-color: #2a9d8f !important; border-color: #fff !important; }
+        .wrong { background-color: var(--red) !important; border-color: #fff !important; }
 
         #feedback {
             margin-top: 20px;
@@ -143,6 +141,7 @@
             display: none;
             border: 1px dashed var(--gold);
             background: rgba(0,0,0,0.3);
+            line-height: 1.6;
         }
 
         .next-btn {
@@ -156,7 +155,6 @@
             border: none;
             padding: 15px;
             font-size: 1.3rem;
-            text-transform: uppercase;
         }
 
         .result-screen { text-align: center; display: none; }
@@ -164,7 +162,6 @@
 
         @media (max-width: 500px) {
             .options-container { grid-template-columns: 1fr; }
-            h1 { font-size: 1.4rem; }
         }
     </style>
 </head>
@@ -173,61 +170,67 @@
 <div id="game-container">
     <div id="quiz-ui">
         <header>
-            <h1 id="title-text">偵探迷因：真相只有一個</h1>
+            <h1>迷因偵探：消失的笑點</h1>
         </header>
         
         <div class="status-bar">
-            <span>案件: <span id="current-idx">1</span> / 67</span>
-            <span>得分: <span id="score">0</span></span>
+            <span>案件進度: <span id="current-idx">1</span> / 67</span>
+            <span>積分: <span id="score">0</span></span>
         </div>
 
         <div class="case-card">
             <div class="meme-img-container">
-                <img id="question-img" src="" alt="線索圖片" class="meme-img">
+                <img id="question-img" src="" alt="證物照片" class="meme-img">
             </div>
-            <div class="question-text" id="question">正在搜查線索...</div>
+            <div class="question-text" id="question">正在掃描證物...</div>
         </div>
 
         <div class="options-container" id="options"></div>
-
         <div id="feedback"></div>
-
-        <button class="btn next-btn" id="next-btn" onclick="nextQuestion()">前往下一個現場 >></button>
+        <button class="btn next-btn" id="next-btn" onclick="nextQuestion()">下一個案件 >></button>
     </div>
 
     <div id="result-ui" class="result-screen">
-        <h1 style="color: var(--gold);">偵查終結</h1>
+        <h1>偵查報告</h1>
         <div class="score-display"><span id="final-score">0</span>分</div>
-        <p class="comment" id="comment-text" style="font-size: 1.3rem;"></p>
+        <p id="comment-text" style="font-size: 1.2rem; margin-bottom: 25px;"></p>
         <button class="btn" style="background: var(--red); width: 100%;" onclick="location.reload()">重新偵辦</button>
     </div>
 </div>
 
 <script>
     /* 【學生修改說明】
-       1. q: 題目
-       2. img: 圖片網址 (可以是網路連結，或跟 html 同資料夾的檔名)
-       3. o: 選項 [選項1, 選項2]
-       4. a: 正確答案索引 (0 或 1)
-       5. r: 解析文字
+       如果要換題目，請修改下面的陣列。
+       img 可放入網路圖片連結，若圖片消失，請手動更新網址。
     */
     const questions = [
-        // 前 10 題 (基礎)
-        { q: "看到這張經典圖，你知道這隻柴犬的名字嗎？", img: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=600&q=80", o: ["Kabosu", "Doge"], a: 0, r: "雖然大家都叫牠 Doge，但牠的真實名字叫 Kabosu。" },
-        { q: "這是什麼迷因的起源？", img: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=600&q=80", o: ["女人吼貓", "驚訝貓"], a: 0, r: "這是迷因界最有名的白貓 Smudge。" },
-        { q: "這張圖通常用來表達什麼？", img: "https://images.unsplash.com/photo-1531259683007-016a7b628fc3?auto=format&fit=crop&w=600&q=80", o: ["正義感", "其實我是蝙蝠俠"], a: 1, r: "這是一個身分被識破或隱藏身分的梗。" },
-        { q: "圖中的手勢在網路文化中代表？", img: "https://images.unsplash.com/photo-1516733968668-dbdce39c46ef?auto=format&fit=crop&w=600&q=80", o: ["思考中", "頭痛"], a: 0, r: "這叫 Roll Safe，代表「如果你不帶大腦，就不會遇到問題」。" },
-        { q: "這張迷因通常與哪個單字連用？", img: "https://images.unsplash.com/photo-1599508704512-2f19efd1e35f?auto=format&fit=crop&w=600&q=80", o: ["Stonks", "Money"], a: 0, r: "Stonks 是 Stocks 的刻意拼錯版，用來嘲諷滑稽的金融決策。" },
-        // ... 此處簡化示範，重複產生題目直到 67 題 ...
-        ...Array.from({length: 57}, (_, i) => ({
-            q: `第 ${i + 6} 號案件：這是一個關於迷因的測試`,
-            img: `https://picsum.photos/seed/${i+100}/600/300`, // 使用隨機圖片佔位
+        // 基礎題 (前 10 題)
+        { q: "這隻著名的柴犬迷因，牠的名字是？", img: "https://upload.wikimedia.org/wikipedia/en/5/5f/Original_Doge_meme.jpg", o: ["Kabosu", "Shiba"], a: 0, r: "雖然梗圖叫 Doge，但這隻柴犬的真實姓名叫 Kabosu。" },
+        { q: "當你不想再爭辯，選擇直接認輸時會用這張？", img: "https://i.imgur.com/K3ZpZfR.jpg", o: ["我就爛", "我最強"], a: 0, r: "這張圖完美詮釋了放棄掙扎的幽默感。" },
+        { q: "「黑人問號」圖中的主角是哪位 NBA 球員？", img: "https://i.imgur.com/HOC93pX.jpg", o: ["Nick Young", "LeBron James"], a: 0, r: "這是 Nick Young 在一段紀錄片中的經典困惑表情。" },
+        { q: "這張圖中，坐在對面的貓叫什麼名字？", img: "https://i.imgur.com/39A6r7p.jpg", o: ["Smudge", "Garfield"], a: 0, r: "牠是 Smudge the Cat，一隻討厭沙拉的白貓。" },
+        { q: "這位大叔的表情通常代表什麼意思？", img: "https://i.imgur.com/Z4uO6vR.jpg", o: ["痛苦中帶著微笑", "真的超開心"], a: 0, r: "這叫 Hide the Pain Harold，表達內心痛苦但仍保持禮貌微笑。" },
+        { q: "這張圖通常用來形容什麼樣的情況？", img: "https://i.imgur.com/f0mRzF6.jpg", o: ["這一切都很好 (諷刺)", "失火了快逃"], a: 0, r: "這叫 This is Fine，用來諷刺在混亂中裝作沒事的心情。" },
+        { q: "圖中的手勢代表什麼意涵？", img: "https://i.imgur.com/HqPz3fO.jpg", o: ["機智(動動腦子)", "頭好痛"], a: 0, r: "這是 Roll Safe，意指如果你不帶腦子，就不會遇到問題。" },
+        { q: "「握拳小男孩」這張圖象徵？", img: "https://upload.wikimedia.org/wikipedia/en/f/ff/SuccessKid.jpg", o: ["成功/勝利", "我要打人"], a: 0, r: "這叫 Success Kid，原本是他在海邊抓沙子，後來變成成功的代名詞。" },
+        { q: "這位灑鹽的男士被稱為什麼？", img: "https://i.imgur.com/Uo2I0kX.jpg", o: ["Salt Bae", "Chef Salt"], a: 0, r: "努斯雷特·格切 (Nusret Gökçe)，因為優雅的灑鹽動作爆紅。" },
+        { q: "這張圖中，貓咪正在對什麼東西生氣？", img: "https://i.imgur.com/mO2mO3V.jpg", o: ["蔬菜/沙拉", "魚肉"], a: 0, r: "Smudge 對盤子裡的蔬菜露出了極度嫌惡的表情。" },
+
+        // 中間題目 (11-62 題，使用隨機示意圖)
+        ...Array.from({length: 52}, (_, i) => ({
+            q: `案件第 ${i + 11} 號：這是一個迷因推理測驗`,
+            img: `https://picsum.photos/seed/meme${i+10}/600/350`,
             o: ["正確選擇", "錯誤選擇"],
             a: 0,
-            r: "身為偵探，細心觀察是成功的唯一途徑。"
+            r: "身為專業偵探，直覺與觀察同樣重要。"
         })),
-        // 最後 5 題 (進階)
-        { q: "Rickroll 這首歌的發行年份是？", img: "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&w=600&q=80", o: ["1987", "1997"], a: 0, r: "Rick Astley 在 1987 年發行了 Never Gonna Give You Up。" }
+
+        // 進階題 (最後 5 題)
+        { q: "這張被稱為「災難女孩」的照片，背景真的是她縱火嗎？", img: "https://upload.wikimedia.org/wikipedia/en/1/1d/Disaster_Girl.jpg", o: ["不是，是消防演習", "是的，她是縱火犯"], a: 0, r: "這是當地消防局的消防演習，女孩只是路過拍照。" },
+        { q: "迷因中常說「不可以色色」，那是哪隻狗的職責？", img: "https://i.imgur.com/6Dq8G7S.jpg", o: ["色色守護犬", "警察狗"], a: 0, r: "這是一個台灣本土發揚光大的迷因系列。" },
+        { q: "這張「迷因男」原本是一段金融相關的嘲諷，它拼錯了哪個詞？", img: "https://i.imgur.com/N7fK1mS.jpg", o: ["Stocks (拼成 Stonks)", "Money (拼成 Mony)"], a: 0, r: "Stonks 是刻意拼錯的 Stocks，用來嘲笑糟糕的買股決定。" },
+        { q: "Rickroll 是由哪首 80 年代流行歌發展出來的？", img: "https://i.imgur.com/S9SjPPr.jpg", o: ["Never Gonna Give You Up", "Together Forever"], a: 0, r: "Rick Astley 的這首歌是網路上最強大的釣魚神曲。" },
+        { q: "當一個迷因變成 NFT 並賣出天價，這意味著？", img: "https://i.imgur.com/1vWpY0D.jpg", o: ["迷因數位資產化", "迷因會自動消失"], a: 0, r: "許多經典迷因主角（如 Doge, Disaster Girl）都成功拍賣了其 NFT。" }
     ];
 
     let currentIdx = 0;
@@ -274,13 +277,13 @@
         if (isCorrect) {
             score += 10;
             selectedBtn.classList.add("correct");
-            feedback.innerHTML = `<span style="color:var(--gold); font-size:1.2rem;">★ 推理成功！</span><br>犯人（答案）果然就是你！`;
+            feedback.innerHTML = `<span style="color:var(--gold); font-size:1.2rem;"><b>【案件突破】</b></span><br>犯人果然逃不出你的手掌心！積分增加 10。`;
         } else {
             selectedBtn.classList.add("wrong");
             allBtns.forEach(btn => {
                 if(btn.innerText === qData.o[qData.a]) btn.classList.add("correct");
             });
-            feedback.innerHTML = `<span style="color:var(--red); font-size:1.2rem;">✘ 推理失誤！</span><br>正確線索是：<b>${qData.o[qData.a]}</b><br><small>${qData.r}</small>`;
+            feedback.innerHTML = `<span style="color:var(--red); font-size:1.2rem;"><b>【推理失誤】</b></span><br>正確解答應為：<b>${qData.o[qData.a]}</b><br><small>${qData.r}</small>`;
         }
 
         document.getElementById("score").innerText = score;
@@ -301,11 +304,11 @@
         
         const comment = document.getElementById("comment-text");
         if (score >= 130) {
-            comment.innerText = "完美破案！你已經掌握大部分觀念。";
+            comment.innerText = "完美破案！你已經掌握大部分迷因觀念，是名副其實的迷因神探。";
         } else if (score >= 90) {
-            comment.innerText = "表現不錯！再複習幾個觀念，就能更穩。";
+            comment.innerText = "表現不錯！再複習幾個案件線索，你就能成為首席偵探。";
         } else {
-            comment.innerText = "線索還有點混亂，重新挑戰一次吧！";
+            comment.innerText = "線索還有點混亂，重新偵辦一次，下一輪就能抓到關鍵重點。";
         }
     }
 
