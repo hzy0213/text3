@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【請在這裡輸入你的測驗標題】</title>
+    <style>
+        /* --- 視覺風格：帥氣偵探風 --- */
+        :root {
+            --dark-blue: #1a1c2c;
+            --bright-blue: #4d94ff;
+            --red: #ff4d4d;
+            --gold: #d4af37;
+            --white: #ffffff;
+            --gray: #f4f4f4;
+        }
+
+        body {
+            background-color: var(--dark-blue);
+            color: var(--white);
+            font-family: "Microsoft JhengHei", sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            background: #252a41;
+            padding: 20px;
+            border-radius: 15px;
+            border: 3px solid var(--gold);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        /* 標題裝飾 */
+        h1 {
+            color: var(--gold);
+            text-align: center;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 10px;
+        }
+
+        .case-card {
+            background: var(--white);
+            color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        .case-header {
+            color: var(--red);
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .question-text {
+            font-size: 1.4rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        /* 選項按鈕 */
+        .options {
+            display: grid;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: var(--gray);
+            border: 2px solid var(--bright-blue);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .option-btn:hover {
+            background: var(--bright-blue);
+            color: white;
+        }
+
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        /* 答案反饋 */
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .correct { background: #d4edda; color: #155724; border-left: 5px solid #28a745; }
+        .wrong { background: #f8d7da; color: #721c24; border-left: 5px solid #dc3545; }
+
+        /* 功能按鈕 */
+        .next-btn, .restart-btn {
+            display: none;
+            width: 100%;
+            background: var(--gold);
+            color: var(--dark-blue);
+            border: none;
+            padding: 15px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 8px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        .next-btn:hover { background: #b8962e; }
+
+        /* 分數顯示 */
+        .result-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .score-circle {
+            font-size: 3rem;
+            color: var(--gold);
+            margin: 20px 0;
+        }
+
+        @media (max-width: 480px) {
+            .question-text { font-size: 1.1rem; }
+            .option-btn { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>案件偵查中：<br>【請在這裡輸入題目主題】</h1>
+
+    <div id="quiz-area">
+        <div class="case-card">
+            <div class="case-header">
+                <span id="case-num">CASE #01</span>
+                <span id="score-display">得分: 0</span>
+            </div>
+            <div id="question" class="question-text">載入中...</div>
+            <div class="options" id="options-container">
+                </div>
+        </div>
+
+        <div id="feedback" class="feedback"></div>
+        <button id="next-btn" class="next-btn">前往下一個案件 ➔</button>
+    </div>
+
+    <div id="result-screen" class="result-screen">
+        <h2>案件調查報告</h2>
+        <div class="score-circle" id="final-score">0</div>
+        <p id="comment" style="font-size: 1.2rem; line-height: 1.6;"></p>
+        <button onclick="location.reload()" class="restart-btn" style="display: block;">重新開始挑戰</button>
+    </div>
+</div>
+
+<script>
+    /* ================================================================
+       【學生修改區】
+       只要修改下方 questions 陣列中的內容，就可以更換題目。
+       q: 題目
+       o: 選項 (請固定放三個，第一個為正確答案，系統會自動洗牌)
+       a: 正確答案在 o 陣列中的索引 (0 代表第一個)
+       e: 解答說明
+       ================================================================
+    */
+    const questions = [
+        // 基礎題 (1-10)
+        { q: "在《名偵探》的世界裡，通常用來代表證據或關鍵的東西稱為？", o: ["線索", "麵包", "時鐘"], a: 0, e: "線索是破解謎團的關鍵物件。" },
+        { q: "下列哪一種顏色常用來象徵「真相」或「警覺」？", o: ["亮藍色", "黑色", "灰色"], a: 0, e: "在設計中，亮藍色常給人清晰、冷靜的感覺。" },
+        { q: "若要將程式碼上傳到網路分享，最常用的平台是？", o: ["GitHub", "Facebook", "Instagram"], a: 0, e: "GitHub 是目前全球最大的程式碼託管平台。" },
+        { q: "在電腦科學中，HTML 主要負責網頁的什麼部分？", o: ["結構與內容", "邏輯運算", "資料庫存取"], a: 0, e: "HTML 就像建築的骨架，負責標記內容。" },
+        { q: "一般而言，直角三角形的直角是多少度？", o: ["90度", "180度", "45度"], a: 0, e: "直角定義為 90 度。" },
+        { q: "「名偵探」在思考時，最需要具備的能力是？", o: ["邏輯推理", "搬運重物", "唱歌跳舞"], a: 0, e: "邏輯推理是偵探的核心技能。" },
+        { q: "下列哪個是英文單字「Clue」的意思？", o: ["線索", "雲朵", "藍色"], a: 0, e: "Clue 是線索的英文。" },
+        { q: "水的化學符號是什麼？", o: ["H2O", "CO2", "O2"], a: 0, e: "H2O 代表兩個氫原子與一個氧原子。" },
+        { q: "在網頁設計中，控制顏色的技術通常稱為？", o: ["CSS", "PHP", "SQL"], a: 0, e: "CSS 負責網頁的視覺外觀與風格。" },
+        { q: "若 2x + 5 = 15，則 x 等於多少？", o: ["5", "10", "2"], a: 0, e: "15 - 5 = 10, 10 / 2 = 5。" },
+
+        // 進階題 (11-15)
+        { q: "【進階】關於 JavaScript 的描述，下列何者正確？", o: ["能讓網頁產生互動效果", "只能用來寫數學計算", "是一種設計圖的軟體"], a: 0, e: "JavaScript 是讓網頁動起來的靈魂技術。" },
+        { q: "【進階】在偵查案件時，若要確認指紋的唯一性，這屬於什麼分析？", o: ["生物辨識", "物理光學", "化學變化"], a: 0, e: "指紋是人體的生物特徵之一。" },
+        { q: "【進階】下列何者是程式語言中「變數」的主要用途？", o: ["暫存資料", "列印文件", "連接滑鼠"], a: 0, e: "變數是用來儲存資訊的容器。" },
+        { q: "【進階】在網頁上點擊按鈕觸發事件，這在 JS 中稱為什麼？", o: ["Event Listener", "Tag Name", "Style Sheet"], a: 0, e: "監聽事件 (Event Listener) 是處理互動的核心。" },
+        { q: "【進階】「大膽假設，小心求證」是哪位學者的名言？", o: ["胡適", "愛因斯坦", "達文西"], a: 0, e: "這是胡適推廣科學精神時著名的格言。" }
+    ];
+
+    // --- 程式邏輯區 ---
+    let currentIdx = 0;
+    let score = 0;
+    let shuffledOptions = [];
+
+    const qText = document.getElementById('question');
+    const optionsCtx = document.getElementById('options-container');
+    const feedback = document.getElementById('feedback');
+    const nextBtn = document.getElementById('next-btn');
+    const scoreDisplay = document.getElementById('score-display');
+    const caseNum = document.getElementById('case-num');
+
+    function initQuiz() {
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const qData = questions[currentIdx];
+        caseNum.innerText = `CASE #${(currentIdx + 1).toString().padStart(2, '0')}`;
+        qText.innerText = qData.q;
+        optionsCtx.innerHTML = '';
+        feedback.style.display = 'none';
+        nextBtn.style.display = 'none';
+
+        // 洗牌選項
+        const originalOptions = qData.o.map((text, i) => ({ text, isCorrect: i === qData.a }));
+        shuffledOptions = originalOptions.sort(() => Math.random() - 0.5);
+
+        shuffledOptions.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = `${String.fromCharCode(65 + index)}. ${opt.text}`;
+            btn.onclick = () => checkAnswer(index);
+            optionsCtx.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selectedIdx) {
+        const allBtns = document.querySelectorAll('.option-btn');
+        allBtns.forEach(btn => btn.disabled = true);
+
+        const isCorrect = shuffledOptions[selectedIdx].isCorrect;
+        const correctInfo = shuffledOptions.find(o => o.isCorrect);
+        const correctLetter = String.fromCharCode(65 + shuffledOptions.indexOf(correctInfo));
+
+        feedback.style.display = 'block';
+        if (isCorrect) {
+            score += 10;
+            feedback.className = 'feedback correct';
+            feedback.innerText = `【推理成功！】 \n${questions[currentIdx].e}`;
+        } else {
+            feedback.className = 'feedback wrong';
+            feedback.innerText = `【線索錯誤！】 \n正確答案是 (${correctLetter}) \n${questions[currentIdx].e}`;
+        }
+
+        scoreDisplay.innerText = `得分: ${score}`;
+        nextBtn.style.display = 'block';
+        
+        if (currentIdx === questions.length - 1) {
+            nextBtn.innerText = "查看調查結果";
+        }
+    }
+
+    nextBtn.onclick = () => {
+        currentIdx++;
+        if (currentIdx < questions.length) {
+            showQuestion();
+        } else {
+            showResult();
+        }
+    };
+
+    function showResult() {
+        document.getElementById('quiz-area').style.display = 'none';
+        const resultScreen = document.getElementById('result-screen');
+        resultScreen.style.display = 'block';
+        document.getElementById('final-score').innerText = `${score} 分`;
+
+        const comment = document.getElementById('comment');
+        if (score >= 130) {
+            comment.innerText = "完美破案！你已經掌握大部分觀念。";
+        } else if (score >= 90) {
+            comment.innerText = "表現不錯！再複習幾個觀念，就能更穩。";
+        } else {
+            comment.innerText = "線索還有點混亂，重新挑戰一次，下一輪就能抓到關鍵重點。";
+        }
+    }
+
+    initQuiz();
+</script>
+
+</body>
+</html>
